@@ -12,12 +12,12 @@ giving the median value rounded to two decimal places.
 
 ![](Practice---Building-Blocks_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->
 
-The median of the variable containing absolute value is 1.05.
+The median of the variable containing absolute value is 1.02.
 
 **Learning assessment:** After the previous code chunk, write a bullet
 list given the mean, median, and standard deviation of the original
 random sample.
 
-- The mean of the random sample is: 1.0317565.
-- The median of the random sample is: 1.0496895.
-- The standard deviation of the random sample is: 0.987799.
+- The mean of the random sample is: 1.049446.
+- The median of the random sample is: 1.0164267.
+- The standard deviation of the random sample is: 0.9706557.
