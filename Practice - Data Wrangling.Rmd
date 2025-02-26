@@ -5,8 +5,10 @@ date: "2025-02-26"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F, message = F, warning = F)
+knitr::opts_chunk$set( message = F, warning = F)
 library(tidyverse)
+library(readxl) #read_excel
+library(haven) #read_sas
 ```
 
 ## Read in some data
@@ -15,5 +17,209 @@ Read in the litters dataset.
 ```{r}
 litters_df = read_csv("./data/FAS_litters.csv")
 litters_df = janitor::clean_names(litters_df) #don't load bc we are only using this function
+names(litters_df)
+
+#Other file format
+mlb11_df = read_excel("data/mlb11.xlsx", n_max = 20)
+pulse_df = read_sas("./data/public_pulse_data.sas7bdat")
+
 ```
+
+## Take a look at `litters_df`, how to treat NA values
+```{r}
+litters_df = read_csv(
+  file = "./data/FAS_litters.csv",
+  na = c(".", "NA", "") # these 3 values will treat as NA
+)
+head(litters_df)
+```
+##  Explicit column specifications
+```{r, echo=FALSE, results='hide'}
+litters_df = 
+  read_csv(
+    file = "./data/FAS_litters.csv",
+    na = c(".", "NA", ""), # these 3 values will treat as NA
+    col_types = cols(
+      Group = col_character(),
+      `Litter Number` = col_character(),
+      `GD0 weight` = col_double(),
+      `GD18 weight` = col_double(),
+      `GD of Birth` = col_integer(),
+      `Pups born alive` = col_integer(),
+      `Pups dead @ birth` = col_integer(),
+      `Pups survive` = col_integer()
+    )
+)
+#OR just specify some of them
+
+
+litters_df = 
+    read_csv(file = "./data/FAS_litters.csv",
+        na = c(".", "NA", ""),
+    col_types = cols(
+      Group = col_factor()
+    )
+)
+head(litters_df)
+```
+*Learning Assessment:* Repeat the data import process above for the file FAS_pups.csv. Make sure the column names are reasonable, and take some quick looks at the dataset. What happens if your specifications for column parsing aren’t reasonable (e.g. character instead of double, or vice versa)?
+```{r}
+pups_df =
+  read_csv(file = "./data/FAS_pups.csv",
+           na = c(".","NA",""),
+           col_types = "fddddd" #factor, double ...
+           )
+pups_df = janitor::clean_names(pups_df) 
+
+```
+
+
+# Data Maipulation
+```{r, results='hide'}
+options(tibble.print_min = 3)
+
+litters_df =   read_csv("./data/FAS_litters.csv", na = c("NA", ".", ""))
+litters_df =  janitor::clean_names(litters_df)
+names(litters_df) # "group" "litter_number"   "gd0_weight"   "gd18_weight"   "gd_of_birth"   "pups_born_alive" "pups_dead_birth" "pups_survive" 
+
+pups_df =  read_csv("./data/FAS_pups.csv", na = c("NA", "."))
+pups_df = janitor::clean_names(pups_df)
+names(pups_df) #"litter_number" "sex"    "pd_ears"  "pd_eyes"  "pd_pivot"  "pd_walk"  
+```
+
+## Select
+```{r}
+select(litters_df, group, litter_number, gd0_weight, pups_born_alive)
+
+select(litters_df, group:gd_of_birth)
+
+select(litters_df, -pups_survive)
+
+select(litters_df, GROUP = group, LiTtEr_NuMbEr = litter_number) #OR
+rename(litters_df, GROUP = group, LiTtEr_NuMbEr = litter_number)
+
+select(litters_df, starts_with("gd"))
+
+select(litters_df, litter_number,pups_survive, everything()) #rearrange
+relocate(litters_df, litter_number, pups_survive)
+
+```
+
+
+*Learning Assessment:* In the pups data, select the columns containing litter number, sex, and PD ears.
+```{r}
+#names(pups_df)
+select(pups_df, litter_number, sex, pd_ears)
+```
+
+# Filter
+```{r}
+filter(litters_df, gd_of_birth == 20)
+filter(litters_df, group == "Con7" & gd_of_birth == 20)
+filter(litters_df, group %in% c("Con7", "Con8"))
+
+
+drop_na(litters_df) #will remove any row with a missing value
+drop_na(litters_df, gd0_weight) #will remove rows for which gd0_weight is missing.
+```
+*Learning Assessment:* In the pups data:
+
+* Filter to include only pups with sex 1
+* Filter to include only pups with PD walk less than 11 and sex 2
+
+```{r}
+#names(pups_df)
+
+filter(pups_df, sex == 1)
+filter(pups_df, pd_walk<11, sex == 2)
+```
+
+## Mutate
+```{r}
+#names(litters_df)
+mutate(litters_df,
+  wt_gain = gd18_weight - gd0_weight,
+  group = str_to_lower(group)
+)
+```
+
+*Learning Assessment:* In the pups data:
+
+* Create a variable that subtracts 7 from PD pivot
+* Create a variable that is the sum of all the PD variables
+```{r}
+#names(pups_df)
+mutate(pups_df,
+       pd_pivot_subtract = pd_pivot - 7,
+       sum_pd = pd_ears + pd_eyes + pd_pivot + pd_walk
+       )
+
+```
+
+## `|>` or `%>%`
+```{r}
+litters_df_clean = 
+  drop_na(
+    mutate(
+      select(
+        janitor::clean_names(
+          read_csv("./data/FAS_litters.csv", na = c("NA", ".", ""))
+          ), 
+      -pups_survive
+      ),
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)
+    ),
+  wt_gain
+  )
+
+litters_df = 
+  read_csv("./data/FAS_litters.csv", na = c("NA", ".", "")) |> 
+  janitor::clean_names() |> 
+  select(-pups_survive) |> 
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)) |> 
+  drop_na(wt_gain)
+```
+
+
+*Learning Assessment:* Write a chain of commands that:
+* loads the pups data
+* cleans the variable names
+* filters the data to include only pups with sex 1
+* removes the PD ears variable
+* creates a variable that indicates whether PD pivot is 7 or more days
+```{r}
+#names(pups_df)
+pups_df =
+  read_csv("./data/FAS_pups.csv", na = c("NA", "", ".")) %>%
+  janitor::clean_names() %>%
+  filter(sex == 1) %>%
+  select(-pd_ears) %>%
+  mutate(
+    pd_pivot_gt7 = pd_pivot>7
+    )
+
+
+pups_df
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
