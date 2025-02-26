@@ -11,7 +11,7 @@ library(readxl) #read_excel
 library(haven) #read_sas
 ```
 
-## Read in some data
+# Data import with readr et al
 
 Read in the litters dataset.
 ```{r}
@@ -74,7 +74,7 @@ pups_df = janitor::clean_names(pups_df)
 ```
 
 
-# Data Maipulation
+# Data manipulation with dplyr
 ```{r, results='hide'}
 options(tibble.print_min = 3)
 
@@ -206,11 +206,83 @@ pups_df
 ```
 
 
+# Tidy data and relational datasets
+
+## `pivot_longer`
+```{r}
+options(tibble.print_min = 3)
+
+pulse_df = 
+  haven::read_sas("./data/public_pulse_data.sas7bdat") %>% 
+  janitor::clean_names()
+
+pulse_df
+
+
+pulse_tidy_df =
+  pivot_longer(
+    pulse_df,
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit",
+    values_to = "bdi"
+  )
+
+pulse_tidy_df #need to clean visit values - "bdi_score_" erase
 
 
 
+pulse_tidy_df = 
+  pivot_longer(
+    pulse_df,
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit",
+    names_prefix = "bdi_score_",
+    values_to = "bdi"
+  )
+
+pulse_tidy_df #change bl to 00mm
 
 
+pulse_tidy_df =
+ haven::read_sas("./data/public_pulse_data.sas7bdat") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    bdi_score_bl:bdi_score_12m,
+    names_to = "visit",
+    names_prefix = "bdi_score_",
+    values_to = "bdi") %>% 
+  mutate(
+    visit = replace(visit, visit == "bl", "00m"),
+    visit = factor(visit)
+  )
+
+pulse_tidy_df
+```
+
+
+*Learning Assessment:* In the litters data, the variables gd0_weight and gd18_weight give the weight of the mother mouse on gestational days 0 and 18. Write a data cleaning chain that retains only litter_number and these columns; produces new variables gd and weight; and makes gd a numeric variable taking values 0 and 18 (for the last part, you might want to use recode …).
+```{r}
+litters_tidy_df = 
+  read_csv("./data/FAS_litters.csv", na = c("NA", ".", "")) %>% 
+  janitor::clean_names() %>% 
+  select(litter_number, gd0_weight, gd18_weight) %>%
+  pivot_longer(
+    gd0_weight:gd18_weight,
+    names_to = "gd",
+    values_to = "weight") %>% 
+  mutate(
+    gd = case_match(
+      gd,
+      "gd0_weight" ~ 0,
+      "gd18_weight" ~ 18
+    )
+  )
+
+litters_tidy_df
+```
+
+
+## `pivot_wider`
 
 
 
