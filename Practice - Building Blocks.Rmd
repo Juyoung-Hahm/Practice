@@ -1,0 +1,35 @@
+---
+title: "Practice - Building Blocks"
+output: html_document
+date: "2025-02-26"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, message = F, warning = F)
+library(tidyverse)
+```
+
+**Learning assessment:** Write a named code chunk that creates a dataframe comprised of: a numeric variable containing a random sample of size 500 from a normal variable with mean 1; a logical vector indicating whether each sampled value is greater than zero; and a numeric vector containing the absolute value of each element. Then, produce a histogram of the absolute value variable just created. Add an inline summary giving the median value rounded to two decimal places. 
+
+```{r}
+df_samp = tibble (
+samp = rnorm(500, mean = 1),
+samp_vector = samp > 0,
+numeric_samp = abs(samp_vector)
+)
+
+#histogram of the absolute  value - numeric_samp
+ggplot(df_samp, aes(x=numeric_samp)) + geom_histogram()
+
+#inline summary
+median_samp = median(pull(df_samp, samp))
+```
+
+The median of the variable containing absolute value is `r round(median_samp, digits = 2)`.
+
+**Learning assessment:** After the previous code chunk, write a bullet list given the mean, median, and standard deviation of the original random sample.
+
+* The mean of the random sample is: `r mean(pull(df_samp, samp))`.
+* The median of the random sample is: `r median(pull(df_samp, samp))`.
+* The standard deviation of the random sample is: `r sd(pull(df_samp, samp))`.
+
